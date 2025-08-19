@@ -1,0 +1,75 @@
+local hum = game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+
+for i,v in pairs(hum:GetPlayingAnimationTracks()) do
+    v:Stop()
+end
+
+local Animate = game.Players.LocalPlayer.Character.Animate
+Animate.walk.WalkAnim.AnimationId = "http://www.roblox.com/asset/?id=136678571910037"
+Animate.run.RunAnim.AnimationId = "http://www.roblox.com/asset/?id=89490336154435"
+Animate.idle.Animation1.AnimationId = "http://www.roblox.com/asset/?id=136678571910037"
+Animate.idle.Animation2.AnimationId = "http://www.roblox.com/asset/?id=136678571910037"
+Animate.jump.JumpAnim.AnimationId = "http://www.roblox.com/asset/?id=136678571910037"
+Animate.fall.FallAnim.AnimationId = "http://www.roblox.com/asset/?id=136678571910037"
+Animate.climb.ClimbAnim.AnimationId = "http://www.roblox.com/asset/?id=121075390792786"
+
+game.Players.LocalPlayer.Character.Humanoid.Jump = false
+
+local SPEED = 6
+
+game:GetService("RunService").RenderStepped:Connect(function(dt)
+    if hum then
+        for i,anim in pairs(hum:GetPlayingAnimationTracks()) do
+                if anim.Animation.AnimationId == "http://www.roblox.com/asset/?id=89490336154435" then
+                    anim:AdjustSpeed(SPEED)
+                end
+        end
+    end
+end)
+
+task.wait(.1)
+getgenv().tilt = true
+
+local rs,plr = game:GetService("RunService"),game:GetService("Players")
+local me,chr,hum,hrp = plr.LocalPlayer,nil,nil,nil
+local px,py = 0,0
+
+local cfg = {
+    ptime = .25,
+    smooth = 5,
+    pred = .4,
+    base = .1,
+    dead = .05,
+    side = 25,
+    sideSmooth = 5
+}
+
+local function init()
+    chr = me.Character or me.CharacterAdded:Wait()
+    hum = chr:WaitForChild("Humanoid")
+    hrp = chr:WaitForChild("HumanoidRootPart")
+end
+init()
+
+rs.RenderStepped:Connect(function(dt)
+    if not (chr and hrp) then return end
+    local mv = hum.MoveDirection
+    local sx,sp = 0,0
+    if mv.Magnitude>0 then
+        local rel = hrp.CFrame:VectorToObjectSpace(mv)
+        sx = -rel.X*cfg.side
+        local pos,vel = hrp.Position,hrp.Velocity
+        local fut = pos+vel*cfg.ptime
+        local dy = fut.Y-pos.Y
+        if math.abs(dy)>cfg.dead then
+            local flat = Vector3.new(hrp.CFrame.LookVector.X,0,hrp.CFrame.LookVector.Z).Unit
+            local dist = (Vector3.new(fut.X,pos.Y,fut.Z)-pos).Magnitude
+            sp+=math.atan2(dy,dist)*cfg.pred
+        end
+        sp+=rel.Z*cfg.base
+    end
+    py += (sx-py)*math.min(dt*cfg.sideSmooth,1)
+    px += (sp-px)*math.clamp(dt*cfg.smooth,0,1)
+    local yaw = CFrame.Angles(0,math.rad(hrp.Orientation.Y),0)
+    hrp.CFrame = CFrame.new(hrp.Position)*yaw*CFrame.Angles(px,0,math.rad(py))
+end)
